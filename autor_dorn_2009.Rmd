@@ -1,0 +1,281 @@
+  ---
+title: "Replication of Autor & Dorn (2009)"
+geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=2cm"
+output: pdf_document
+fontsize: 12pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy.opts=list(width.cutoff=80), tidy=TRUE)
+```
+
+Clearing stored variables and setting correct working directory for this assignment:
+```{r}
+rm(list=ls())
+setwd( "/Desktop/" )
+```
+
+\section*{Introduction \& Main Idea}
+
+The paper that I replicate here is titled 'This Job is Getting Old: Measuring Changes in Job Opportunities using Occupational Age Structure', by David Autor and David Dorn, published in the American Economic Review Papers \& Proceedings in 2009. The paper focuses on a feature of employment growth over the last 25 years, the disproportionate concentration of this growth in the top and bottom of the occupational skill distribution. They note that this pattern is not unique to the United States, and occurs in many European countries as well. The explanation favored by the authors is that there has been technological change which has eroded the demand for routine cognitive and manual activities, which tend to be in the middle of the skill distribution for jobs. 
+
+These are precisely the kinds of jobs that tend to follow precise, easy-to-understand procedures that can be readily translated to algorithmic steps, that can then be codified into computer software and performed by machines. Since these 'routine' job tasks are now automated, there is an increase in the relative demand for nonroutine tasks in which human workers continue to hold the competitive advantage over machines. These can broadly be classified into one of two categories. The first comprises of jobs that contain abstract tasks, requiring dynamic problem-solving, creativity, and interpersonal skills and extensive social interactions. These jobs include lawyers, scientists, corporate managers etc. that tend to be on the upper end of the worker skill distribution. The other category of jobs consists of those which feature a large number of manual tasks which require dexterity, situational adaptability and visual/language recognition. This category includes janitors, construction workers, security guards, mechanics and so forth. This category is concentrated in the lower end of the skill distribution. The combined effect of automation of middle-skill jobs and the increased relative demand at the two ends of the skill distribution lead to a U-shaped pattern of job growth, which is what this paper starts by describing. 
+
+The main research question deals with understanding the dynamics of age and skill as middle-skill routine occupations get automated and decline. Specifically, which age and skill groups move up the occupational distribution (towards the abstract, creative jobs), and which move to the lower end (non-routine and mechanical tasks). It is reasonable that workers over time develop occupation-specific human capital as they gain more experience at their job. This specific knowledge acquired over time makes the cost of occupational mobility higher for older workers. One would therefore expect that as an occupation declines, older workers face incentives not to leave the job (on account of having acquired job-specific human capital, and reduced capacity to acquire new skills) while younger workers will have an incentive to not enter (since future opportunities in that job are relatively worse). In addition, firms may themselves reduce hiring into these jobs. The net effect will be that workers in these declining occupations will get older on average.   
+
+\section*{Replication}
+
+\subsection*{Replicating Table 1}
+
+The first result of this paper is documenting a robust relationship between changes in occupational size, and shifts in the age distribution of the occupation's workforce. This is done by means of simple bivariate regressions of the form:
+
+$$\Delta Y_j = \alpha + \beta_1 \Delta E_j + \epsilon_j$$
+
+where $Y_j$ denotes the mean age of workers in the occupation, or the share of workers in that occupation and a chosen age bracket. $E$ denotes the share of an occupation in total employment in a given year. The change is measured over the period between 1980 and 2005. Table 1 shows that it is indeed the case that declining occupation shares are correlated strongly with an increase in the average age of workers in that occupation. Moreover, declining occupations tend to have declining shares of young workers, and increasing shares of older workers. This is exactly in line with the hypothesis discussed above. We note also that occupations with greater routine task intensity (discussed below) see an increase in the average age, and in the share of older workers. Table 1 as in the paper is shown below for the reader's reference.
+
+<p>
+![Figure 1](table1_actual.png)
+</p>
+
+All data used in this paper is publicly available on David Autor's website. The table above is replicated in R using the code below. The output from the regressions is suppressed to save space, and the final results are tabulated further below. 
+
+```{r, warning=FALSE, results='hide'}
+library( readstata13 )
+library( SDMTools )
+
+#Generating new variables
+dat <- read.dta13( 'occ1990dd_data2012pp.dta' )
+dat$chg_avgage8005 <- dat$avg_age2005 - dat$avg_age1980
+dat$chg_empsh8005 <- 100*( dat$sh_empl2005 - dat$sh_empl1980  )
+dat$chg_shage8005_1629 <- dat$sh_age1629_2005 - dat$sh_age1629_1980
+dat$chg_shage8005_3054 <- dat$sh_age3054_2005 - dat$sh_age3054_1980
+dat$chg_shage8005_5564 <- dat$sh_age5564_2005 - dat$sh_age5564_1980
+
+mean_RTI <- wt.mean( dat$RTIb, dat$sh_empl1980 )
+sd_RTI <- wt.sd( dat$RTIb, dat$sh_empl1980 )
+dat$RTIstd <- ( dat$RTIb - mean_RTI )/sd_RTI
+
+######################################
+######## Replicating Table 1 #########
+######################################
+
+#Replicating Panel A
+summary( lm( chg_avgage8005 ~ chg_empsh8005, data=dat, weights=sh_empl1980 ) )
+summary( lm( chg_shage8005_1629 ~ chg_empsh8005, data=dat, weights=sh_empl1980 ) )
+summary( lm( chg_shage8005_3054 ~ chg_empsh8005, data=dat, weights=sh_empl1980 ) )
+summary( lm( chg_shage8005_5564 ~ chg_empsh8005, data=dat, weights=sh_empl1980 ) )
+
+#Replicating Panel B
+summary( lm( chg_avgage8005 ~ RTIstd, data=dat, weights=sh_empl1980 ) )
+summary( lm( chg_shage8005_1629 ~ RTIstd, data=dat, weights=sh_empl1980 ) )
+summary( lm( chg_shage8005_3054 ~ RTIstd, data=dat, weights=sh_empl1980 ) )
+summary( lm( chg_shage8005_5564 ~ RTIstd, data=dat, weights=sh_empl1980 ) )
+
+#Replicating Panel C
+summary( lm( chg_avgage8005 ~ RTIstd + chg_empsh8005, data=dat, weights=sh_empl1980 ) )
+summary( lm( chg_shage8005_1629 ~ RTIstd + chg_empsh8005, data=dat, weights=sh_empl1980 ) )
+summary( lm( chg_shage8005_3054 ~ RTIstd + chg_empsh8005, data=dat, weights=sh_empl1980 ) )
+summary( lm( chg_shage8005_5564 ~ RTIstd + chg_empsh8005, data=dat, weights=sh_empl1980 ) )
+
+
+```
+
+The results of the replication are tabulated below. We see that they are an almost perfect match for the true results obtained in the paper. 
+
+<p>
+![Figure 1](table1_replication.png)
+</p>
+
+
+\subsection*{Replicating Table 2}
+
+A logical extension of the premise discussed above is the following. If routine tasks are indeed being supplanted by computerization and automation, then we should expect to see employment declines concentrated in occupations that are specialized in such tasks. The National Income and Product Accounts data shows that starting in 1980, the share of computer hardware/software in US capital incestment rose steeply through the year 2000. So we should expect to see routine task dominated occupations experiencing sharp declines from 1980 onwards. The authors degine a routine task intensity metric:
+
+$$RTI_j = ln( \hat{R}_{j, 1980} / \hat{M}_{j, 1980})$$
+
+where $\hat{R}$ and $\hat{M}$ denote the intensity of routine and manual task input in each occupation in 1980. It thus captures the relative importance of routine tasks (easily computerized) and manual tasks (not easily computerized due to requiring advanced motor skills and visual coordination). 
+
+The authors use the relationship between occupational decline and occupational aging to study how the decline in occupations affects the opportunity set of workers at different age and skill levels. This part of the analysis focuses on changes in the age composition within local labor markets. The hypothesis is that local labor markets that specialized in routine task-intensive occupations should experience  contraction of middle-skill jobs over the sample period. The analysis uses Commuting Zones (CZ) as a measure of local labor markets. Each CZ is assigned routine employment share (RSH) that captures the fraction of employment falling under routine task-intensive occupations at the beginning of the sample. Equations of the form below are estimated:
+
+$$\Delta Y_{ak\tau} = \alpha_{\tau} + \beta_2 RSH_{kt} + \omega_{ak}\tau$$
+
+where $\Delta Y$ captures the annual change in an outcome measure for age-education group $a$, in commuting zone $k$ over the time interval $\tau$. $\alpha$ is a vector of time dummies and $RSH$ is the routine employment share in that CZ. Table 2 from the paper (shown below) highlights that CZs initially specialized in routine task-intensive occupations saw substantial declines in the share of workers employed in these occupations. These declines are larger for younger workers, and greater for non-college workers. This could be because less educated workers tend to perform a disproportionate share of routine tasks, making them more vulnerable to displacement. Panels B and C show that declines in employment within CZs are offset by employment gains in low-skill non-routine occupations. For younger workers, gains are also observed in employment in high-skill non-routine occupations. Finally, the table shows that college workers initially working in routine task-intensive jobs gain employment in both high and low skill non-routine jobs. The high-skill gains continue to be concentrated among the younger workers. For non-college workers, the entire differential decline is absorbed by increasing low-skill non-routine employment. So overall, the hollowing out of the distribution is different for workers of different skill: college educated workers show movement towards both tails, while non-college educated workers move primarily to the left, towards lower-paying non-routine jobs. 
+
+<p>
+![Figure 1](table2_actual.png)
+</p>
+
+I attempt to replicate this table using the code below. As previously mentioned, direct markdown output is suppressed to save space, and I compile the results below. 
+
+```{r, results='hide', warning=FALSE, message=FALSE}
+library(lmtest) 
+library(multiwayvcov)
+
+#Reading in data
+dat <- read.dta13( 'workfile2012pp.dta' )
+dat <- dat[ dat$yr >= 1980, ]
+
+######################################
+######## Replicating Table 2 #########
+######################################
+
+#Replicating Panel A (All workers)
+mod1 <- lm(d_sh_routine_among1629 ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov1 <- sqrt( diag( cluster.vcov( mod1, dat$statefip) ) )
+
+mod2 <- lm(d_sh_routine_among3054 ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov2 <- sqrt( diag( cluster.vcov( mod2, dat$statefip) ) )
+
+mod3 <- lm(d_sh_routine_among5564 ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov3 <- sqrt( diag( cluster.vcov( mod3, dat$statefip) ) )
+
+
+#Replicating Panel A (College Workers)
+mod4 <- lm(d_sh_routine_among1629c ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov4 <- sqrt( diag( cluster.vcov( mod4, dat$statefip) ) )
+
+mod5 <- lm( d_sh_routine_among3054c ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov5 <- sqrt( diag( cluster.vcov( mod5, dat$statefip) ) )
+
+mod6 <- lm( d_sh_routine_among5564c ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov6 <- sqrt( diag( cluster.vcov( mod6, dat$statefip) ) )
+
+
+#Replicating Panel A (Non-College Workers)
+mod7 <- lm( d_sh_routine_among1629nc ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov7 <- sqrt( diag( cluster.vcov( mod7, dat$statefip) ) )
+
+mod8 <- lm( d_sh_routine_among3054nc ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov8 <- sqrt( diag( cluster.vcov( mod8, dat$statefip) ) )
+
+mod9 <- lm( d_sh_routine_among5564nc ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov9 <- sqrt( diag( cluster.vcov( mod9, dat$statefip) ) )
+
+
+#Replicating Panel B (All workers)
+mod10 <- lm( d_sh_nroutineh_among1629 ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov10 <- sqrt( diag( cluster.vcov( mod10, dat$statefip) ) )
+
+mod11 <- lm( d_sh_nroutineh_among3054 ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov11 <- sqrt( diag( cluster.vcov( mod11, dat$statefip) ) )
+
+mod12 <- lm( d_sh_nroutineh_among5564 ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov12 <- sqrt( diag( cluster.vcov( mod12, dat$statefip) ) )
+
+#Replicating Panel B (College Workers)
+mod13 <- lm( d_sh_nroutineh_among1629c ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov13 <- sqrt( diag( cluster.vcov( mod13, dat$statefip) ) )
+
+mod14 <- lm( d_sh_nroutineh_among3054c ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov14 <- sqrt( diag( cluster.vcov( mod14, dat$statefip) ) )
+
+mod15 <- lm( d_sh_nroutineh_among5564c ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov15 <- sqrt( diag( cluster.vcov( mod15, dat$statefip) ) )
+
+#Replicating Panel B (Non-College Workers)
+mod16 <- lm( d_sh_nroutineh_among1629nc ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov16 <- sqrt( diag( cluster.vcov( mod16, dat$statefip) ) )
+
+mod17 <- lm( d_sh_nroutineh_among3054nc ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov17 <- sqrt( diag( cluster.vcov( mod17, dat$statefip) ) )
+
+mod18 <- lm( d_sh_nroutineh_among5564nc ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov18 <- sqrt( diag( cluster.vcov( mod18, dat$statefip) ) )
+
+
+#Replicating Panel C (All workers)
+mod19 <- lm( d_sh_nroutinel_among1629 ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov19 <- sqrt( diag( cluster.vcov( mod19, dat$statefip) ) )
+
+mod20 <- lm( d_sh_nroutinel_among3054 ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov20 <- sqrt( diag( cluster.vcov( mod20, dat$statefip) ) )
+
+mod21 <- lm( d_sh_nroutinel_among5564 ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov21 <- sqrt( diag( cluster.vcov( mod21, dat$statefip) ) )
+
+#Replicating Panel C (College Workers)
+mod22 <- lm( d_sh_nroutinel_among1629c ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov22 <- sqrt( diag( cluster.vcov( mod22, dat$statefip ) ) )
+
+mod23 <- lm( d_sh_nroutinel_among3054c ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov23 <- sqrt( diag( cluster.vcov( mod23, dat$statefip ) ) )
+
+mod24 <- lm( d_sh_nroutinel_among5564c ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov24 <- sqrt( diag( cluster.vcov( mod24, dat$statefip ) ) )
+
+#Replicating Panel C (Non-College Workers)
+mod25 <- lm( d_sh_nroutinel_among1629nc ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov25 <- sqrt( diag( cluster.vcov( mod25, dat$statefip ) ) )
+
+mod26 <- lm( d_sh_nroutinel_among3054nc ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov26 <- sqrt( diag( cluster.vcov( mod26, dat$statefip ) ) )
+
+mod27 <- lm( d_sh_nroutinel_among5564nc ~ l_sh_routine33b + t2 + t3, data = dat, weights= timepwt48 )
+cov27 <- sqrt( diag( cluster.vcov( mod27, dat$statefip ) ) )
+
+```
+
+The results of running this code are shown below. We see that everything replicates perfectly except for Panel B, for which the replication results are quite different. After carefully checking the code several times, and comparing it to the process used in the paper, I am forced to conclude that there could either be an error in the final print version of the paper, or a mislabeling of the independent variables in the table. 
+
+<p>
+![Figure 1](table2_replication.png)
+</p>
+
+
+\section*{Extensions}
+
+This paper was of particular interest to me, since the patterns document across skill and age are closely related to a topic I am currently working on: attrition of workers in the public sector. In particular, I use a dataset of all workers in the US federal government. 
+
+There is a long history in the labor economics literature, of attempting to understand the relative dynamics of wages and unemployment. The problem is an important one, as employment is one of the most critical drivers of consumption, growth and economic development. Moreover, it has remained a consistent and thorny issue in the policy arena, and is regularly an important point of discussion among policymakers and politicians. How best to guarantee lower unemployment rates? Are minimum wage regulations necessary, and what distortions do they cause? These are the kinds of questions that require a thorough understanding of wages and unemployment.
+
+My work focuses on a more narrow problem: that of the public-private wage gap. This refers to the difference in wages offered in the private sector, and those offered in the public sector. Historically, economists have thought about this in terms of an implicit tradeoff. In the public sector, workers in the US tend to enjoy greater job security and stability, better work hours and retirement benefits, and more socially useful and therefore meaningful work. The public sector generally cannot compete with the profit-driven private sector in terms of wages however, with the public-private wage gap widening consistently since the 1970s. While the private sector may offer higher wages, it is a more competitive market, with less job security, longer work hours, and more stressful tasks on more aggressive deadlines. Workers thus balance out the explicit benefits (wages) with the implicit benefits (work culture and retirement plans). Over time, the work culture in the private sector has improved, and the wage gap has continued to widen. 
+
+As a result, retention of government employees has become a very important problem. The figure below illustrates that the main cause of attrition among US federal workers has consistently been voluntary separation. The public sector performs a number of critical functions necessary for the smooth functioning of both government and society. These include, but are by no means limited to, maintaining and administering the military, law enforcement, infrastructure development, energy grid and telecommunications, public transit, education, healthcare and social security benefits. Without a skilled and motivated workforce, the public sector would find it very difficult to perform these duties, leadings to a cascading series of problems that would affect both the private sector, and have wider implications for the economy. 
+
+<p>
+![Figure 1](Replication Exercise/Leaving.png)
+</p>
+
+But how much has public sector attrition really grown over time, and how much of the variation can be attributed to the public-private wage gap? This is the question that I am attempting to answer. For the purposes of this project, I document some general patterns observed, and compare them to the predictions of the Autor and Dorn paper. 
+
+First consider the aggregate age dynamics of the federal government workforce. We note that on average, the workforce has grown more educated: the average number of years of education is consistently higher today than in the past, for all age categories. In general, younger workers today appear to achieve higher ranks of seniority than their counterparts in previous years, suggesting greater responsibility given to younger and less experienced workers. Contrary to popular belief, federal workers are actually paid quite well. Their salary, adjusted for cost of living (measured by inflation) has actually grown consistently over time. We can empirically verify one well documented fact: federal workers are growing older over time, with the age distribution shifting further and further to the right over time.    
+<p>
+![Figure 1](Aggregate_Age_Dynamics.png)
+</p>
+
+In the spirit of Autor and Dorn, another point of interest would be the distribution of skills in the federal government. As a way to get at this, I match the federal government jobs to similar and comparable jobs in the private sector. The private sector data is actually the same as used by Autor and Dorn. I use machine learning methods from natural language processing to perform the matching, using descriptions of the jobs in both sectors. This is done using the following methods, combined into an ensemble learner. 
+
+The first approach I consider is the term frequency-inverse document frequency approach. In many ways, this approach is the workhorse model for any natural language processing application. The weighting scheme implicit in this method increases the weight proportionally to the number of times a word appears in a document, offsetting this by the number of documents in the corpus that contain the word. This allows us to adjust for the fact that some words are in general more frequent than others, and should therefore be given lower priority. There may be other words that are rare in general, but appear often in a particular document, suggesting that the word captures some important aspect of the semantic meaning of that document. This is particularly important for our problem here, as we are attempting to classify the similarity of the documents. The TF-IDF weighting is thus one plausible way to separate out distinct documents. The drawbacks here arise from the fact that we are making implicit use of the bag-of-words model. That is, TF-IDF alone does not account for words with similar meanings (will be treated as distinct), and cannot infer similarity from context. This is a major shortcoming, since it is plausible that job descriptions may regularly use some common substitute words to describe otherwise identical roles. As an example that actually occurs in the data, consider the words 'teacher' and 'educator'. These would be considered different in the document-term matrix, whereas we would want them to be treated the same. 
+
+Next, I consider Latent Semantic Allocation. LSA is generally used most often in analyzing relationships between documents to product a set of concepts or ideas that are related to those documents. In practice, a document term matrix is constructed, and a truncated singular value decomposition is used to reduce dimensionality. In the context of topic analysis, LSA can be used to decompose the matrix into two parts: a document-topic matrix and a topic-term matrix. Once this is done, standard distance metrics (such as the cosine similarity) can be used to compare the similarity of different documents. The general problem with LSA (indeed with LDA and topic models in general) is that the topic matrix is not easy to interpret. We can ignore this here since the goal is not so much to interpret the topics, but to use the topics to decide which documents are most similar. A more insurmountable problem is the fact that such methods generally require a large number of documents, with a reasonably large amount of text data per document to work well. It is not clear that we have enough job descriptions to fulfill this condition, and moreover, the descriptions themselves tend to be quite sparse. Nonetheless, we include LSA in the ensemble. 
+
+The third method that is utilized is Doc2Vec. This is in many ways more advanced than the two methods discussed above. To begin with, it allows us to dispose of the bag-of-words assumption, and to account for subtleties of good textual representation, such as word orderings and context. Doc2Vec can be thought of as an extension of a simpler method called Word2Vec. The goal of Word2Vec is to generate a numerical representation for each word, that will capture closeness of meaning. In particular, we would also like to be able to infer logical meanings of combinations of words. To use the classic example, the word representations for 'king', and for 'female', should allow for combination, such that adding the two vector representations gives us something close to the representation for 'queen'. Similarly, subtracting the representation of 'queen' from 'king', should give a vector close to 'man'. Thus, the goal is to capture contextual meaning of words, and to encapsulate relations between words, such as synonyms, antonyms or analogies. The details of the implementation are not straightforward to discuss, and the algorithm uses a combination of a continuous bag-of-words model, with a skip-gram model approach. The former essentially generates a sliding window which takes a set of words simultaneously as an input, and then attempts to predict words based on surrounding words/tuples. That is, it attempts to learn from context. The latter, skip-gram, attempts to predict the context, the surrounding words, using any given word. The learning approach is done via a neural net, where the weighting scheme generated in the network layers allows us to back out word embeddings accounting for context. Finally, Word2Vec can be extended quite easily to interpret documents by including an additional feature vector as an input, which captures unique documents, or unique jobs in our case. This last model is called the distributed memory version of the paragraph vector. Doc2Vec generally requires a fairly large training set of documents. For each document, a word vector is generated for each word, and a document vector for the document itself. When testing, the word and document embeddings are used to calculate the embeddings for the new document. One issue with Doc2Vec is that measuring the performance of the algorithm becomes tricky, since we want to show that it captures context well, but this is hard to do rigorously. Another shortcoming is that getting good meaningful word embeddings requires a large training set that allows the algorithm to learn context based on large groupings of words utilized together with any given word. Once again, limits on the data available here prevent this. A decision also needs to be made on the dimensionality of each word embedding. Lower dimensionality means we might end up with similar embeddings for dissimilar words, but taking the dimensionality too high makes it likely that we would find substantially distinct embeddings for very similar words.
+
+These methods are combined into an ensemble learner, which is then trained on the data. The results allow me to identify the most similar private sector jobs to each public sector job. Once this is done, I use the routine task-intensity of the private sector comparable jobs to compute a task intensity for the public sector jobs. Then I classify the public sector jobs into terciles, which are labeled low-skill (LS, very routine and easily automated jobs), skilled (S, moderately routine) and high-skill jobs (HS, non-routine and requiring abstract thinking). The figure below shows how the proportion of these jobs in the federal government has been changing over time. As expected, we see that the proportion of low-skill jobs has been declining over time, as they are automated and computerized away. The middle skill jobs have been increasing over time, while high skill jobs have grown slightly as well. This pattern is consistent with the automation theory but does not neatly fit into Autor/Dorn's idea of greater roles in the low skill and high skill parts of the distribution. This could be because the granularity of the routine-task intensity slices was too broad. For lack of time, I was unable to investigate this any further.   
+
+<p>
+![Figure 1](skill_trend.png)
+</p>
+
+Another interesting aspect to consider is a first order implication of Autor and Dorn's work. As middle-skill jobs decline, we should see higher attrition in these kind of roles, and reduced attrition in the other parts of the distribution. My micro-data allows me to measure these separations of workers directly. Consider first the attrition for different skill categories over time. 
+
+<p>
+![Figure 1](skill_quit_trend.png)
+</p>
+
+We see that since the late 1990s, there has indeed been a sudden spike in attritions from the low-skill jobs, while skilled jobs have seen a decline in attrition, and highest-skilled jobs are relative stable over time. Finally, let us consider the age-distribution of attrition. Autor/Card predict that attrition should be higher among younger workers (who are able to learn new skills), and lower for older workers. In the public sector at least, this is not what we see. If anything, voluntary attrition for the youngest workers has been on the decline, while attrition among older workers has seen modest growth. 
+
+<p>
+![Figure 1](age_quit_trend.png)
+</p>
+
+
+\section*{Conclusion}
+
+In this project, I have successfully (with the exception of a single panel) replicated the results of David Autor and David Dorn's American Economic Review Papers & Proceedings publication from 2009. As an extension, I have used methods from NLP to merge micro-data on public sector workers to the same data used by Autor/Dorn. This has allowed me to examine different slices of the data, and test the validity of Autor/Dorn's finding in the public sector. I note that the slices on skill-level used for my extension might not be granular enough to see the exact same pattern, but some indications of job losses due to automation and computerization are visible. With regard to age, attrition appears to be decreasing for younger workers. It is possible that this is a feature unique to the public sector labor force, while Autor/Dorn's findings are likely most applicable to the private sector, which would be a dominant part of the Census data that they use. 
+
+
+
+
+
+
